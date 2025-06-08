@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const Order = require("../models/Order");
-const { verifyToken, verifyAdmin } = require("../middlewares/verifyToken");
+const { verifyToken, verifyAdmin } = require("../middleware/verifyToken");
 
 /**
  * @desc    Tạo đơn hàng mới

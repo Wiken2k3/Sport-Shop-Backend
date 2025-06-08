@@ -1,5 +1,5 @@
 const jwt = require("jsonwebtoken");
-const User = require("../models/User.model");
+const User = require("../models/User");
 
 /**
  * @desc    Middleware xác thực JWT Token
@@ -23,7 +23,7 @@ const verifyToken = async (req, res, next) => {
       return res.status(404).json({ message: "Không tìm thấy người dùng." });
     }
 
-    req.user = user; // Gắn user đã xác thực (trừ mật khẩu)
+    req.user = user;
     next();
   } catch (err) {
     console.error("❌ Token không hợp lệ hoặc đã hết hạn:", err.message);
@@ -35,11 +35,23 @@ const verifyToken = async (req, res, next) => {
  * @desc    Middleware xác thực quyền Admin
  * @access  Private/Admin
  */
-const verifyAdmin = (req, res, next) => {
-  if (!req.user || !req.user.isAdmin) {
-    return res.status(403).json({ message: "Bạn không có quyền admin." });
+const verifyAdmin = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user.id);
+
+    if (!user) {
+      return res.status(404).json({ message: "Không tìm thấy người dùng." });
+    }
+
+    if (!user.isAdmin) {
+      return res.status(403).json({ message: "Bạn không có quyền admin." });
+    }
+
+    next();
+  } catch (err) {
+    console.error("❌ Lỗi xác thực quyền admin:", err.message);
+    res.status(500).json({ message: "Lỗi xác thực quyền admin.", error: err.message });
   }
-  next();
 };
 
 /**

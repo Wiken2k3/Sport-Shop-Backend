@@ -1,26 +1,25 @@
 const express = require("express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const User = require("../models/User.model");
-const { verifyToken } = require("../middleware/verifyToken");
-const verifyAdmin = require("../middleware/verifyAdmin");
+const User = require("../models/User");
+const { verifyToken, verifyAdmin } = require("../middleware/verifyToken");
 
 const router = express.Router();
 
-// Hàm tạo token
+// Tạo token JWT
 const createToken = (user) => {
   return jwt.sign(
     {
       id: user._id,
       email: user.email,
-      isAdmin: user.isAdmin, // ✅ bổ sung vào token
+      isAdmin: user.isAdmin,
     },
     process.env.JWT_SECRET,
     { expiresIn: process.env.JWT_EXPIRES_IN || "3d" }
   );
 };
 
-// ✅ REGISTER
+// ✅ Đăng ký
 router.post("/register", async (req, res) => {
   const { name, email, password } = req.body;
 
@@ -35,10 +34,9 @@ router.post("/register", async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-
     const newUser = new User({ name, email, password: hashedPassword });
-    const savedUser = await newUser.save();
 
+    const savedUser = await newUser.save();
     const token = createToken(savedUser);
 
     res.status(201).json({
@@ -57,7 +55,7 @@ router.post("/register", async (req, res) => {
   }
 });
 
-// ✅ LOGIN
+// ✅ Đăng nhập
 router.post("/login", async (req, res) => {
   const { email, password } = req.body;
 
@@ -93,12 +91,12 @@ router.post("/login", async (req, res) => {
   }
 });
 
-// ✅ LẤY THÔNG TIN NGƯỜI DÙNG
+// ✅ Lấy thông tin người dùng đang đăng nhập
 router.get("/me", verifyToken, async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).select("-password");
+    const user = await User.findById(req.user._id).select("-password");
     if (!user) {
-      return res.status(404).json({ message: "Người dùng không tồn tại." });
+      return res.status(404).json({ message: "Không tìm thấy người dùng." });
     }
     res.status(200).json({ user });
   } catch (err) {
@@ -106,7 +104,7 @@ router.get("/me", verifyToken, async (req, res) => {
   }
 });
 
-// ✅ TEST ADMIN ONLY
+// ✅ Route test quyền admin
 router.get("/admin-only", verifyToken, verifyAdmin, (req, res) => {
   res.json({ message: `Chào admin ${req.user.email}!` });
 });
